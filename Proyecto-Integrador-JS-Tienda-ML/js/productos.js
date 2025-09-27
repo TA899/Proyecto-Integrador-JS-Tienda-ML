@@ -20,6 +20,21 @@ let carrito = []; // Array para el carrito de compras
 // TODO: Referencias a elementos del DOM que necesitarás usar
 const gridProductos = document.getElementById('productsGrid');
 const contadorCarrito = document.getElementById('cartCount');
+const modalOver = document.getElementById('modalOverlay');
+const continueShoppingBtn = document.getElementById('continueShoppingBtn');
+const selectorCategoria = document.getElementById('categoryFilter');
+const selectorOrdenar = document.getElementById('sortSelect');
+const buscadorInput = document.getElementById('searchInput');
+
+
+function mostrarModal() {
+    modalOver.style.display = 'flex'; // Si uso block el modal aparece en la esquina superior izquierda con flex se centra
+}
+function cerrarModal() {
+    modalOver.style.display = 'none';
+}
+
+continueShoppingBtn.addEventListener('click', cerrarModal);
 
 // ==========================================
 // FUNCIÓN 1: CARGAR PRODUCTOS DESDE JSON (10 PUNTOS)
@@ -42,14 +57,65 @@ const contadorCarrito = document.getElementById('cartCount');
  */
 async function cargarProductos() {
     try {
+    const respuesta = await fetch('data/productos.json');
+    const data = await respuesta.json();
+    todosLosProductos = data.productos;
+    //console.log(todosLosProductos);
+   filtrarYordenarProductos();
         // TODO: Escribe tu código aquí
         // Ejemplo: const respuesta = await fetch('data/productos.json');
-        
         
     } catch (error) {
         console.error('Error al cargar productos:', error);
     }
 }
+
+
+// Función para filtrar y ordenar productos
+function filtrarYordenarProductos() {
+
+    let productosFiltrados = [...todosLosProductos];
+  const categoriaSeleccionada = selectorCategoria.value;
+//console.log(categoriaSeleccionada);
+
+  if (categoriaSeleccionada !== 'todas') {
+        productosFiltrados = todosLosProductos.filter(producto => producto.categoria === categoriaSeleccionada); // se usa filter porque find es para encontrar un solo elemento
+
+}
+
+
+const textoBusqueda = buscadorInput.value.toLowerCase();
+ 
+if (textoBusqueda) {
+    productosFiltrados = productosFiltrados.filter(producto => producto.nombre.toLowerCase().includes(textoBusqueda));
+}
+
+
+
+    
+        const criterioOrden = selectorOrdenar.value;
+        //console.log(criterioOrden);
+        if (criterioOrden === 'price-asc') {
+            productosFiltrados.sort((a, b) => a.precio - b.precio);
+        }   else if (criterioOrden === 'price-desc') {
+            productosFiltrados.sort((a, b) => b.precio - a.precio);
+        }   else if (criterioOrden === 'name-asc') {
+            productosFiltrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        }   else if (criterioOrden === 'name-desc') {
+            productosFiltrados.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        }
+     
+
+
+
+
+mostrarProductos(productosFiltrados);
+
+}
+
+selectorCategoria.addEventListener('change', filtrarYordenarProductos);
+buscadorInput.addEventListener('input', filtrarYordenarProductos);
+selectorOrdenar.addEventListener('change', filtrarYordenarProductos);
 
 // ==========================================
 // FUNCIÓN 2: MOSTRAR PRODUCTOS EN EL DOM (15 PUNTOS)
@@ -81,17 +147,30 @@ async function cargarProductos() {
 function mostrarProductos(productos) {
     // TODO: Escribe tu código aquí
     // Paso 1: Limpiar contenido anterior
-    
+    gridProductos.innerHTML = '';
     
     // Paso 2: Recorrer array de productos
+ productos.forEach(producto => {   
+    const tarjeta = document.createElement('div');
+    tarjeta.className = 'product-card';
+    tarjeta.innerHTML = `
+        <img src="${producto.imagen}" alt="${producto.nombre}">
+        <h3>${producto.nombre}</h3>
+        <p class="price">${formatearPrecio(producto.precio)}</p>
+        <button onclick="agregarAlCarrito(${producto.id})">Agregar al carrito</button>
+    `;
+    gridProductos.appendChild(tarjeta);
+
+
     
-    
-    // Paso 3: Crear tarjeta para cada producto
+ }); }
+
+  // Paso 3: Crear tarjeta para cada producto
     
     
     // Paso 4: Agregar tarjeta al grid
-    
-}
+
+
 
 // ==========================================
 // FUNCIÓN 3: AGREGAR AL CARRITO (20 PUNTOS)
@@ -119,26 +198,35 @@ function agregarAlCarrito(idProducto) {
     // TODO: Escribe tu código aquí
     
     // Paso 1: Buscar el producto
-    // const producto = todosLosProductos.find(p => p.id === idProducto);
+    const producto = todosLosProductos.find(p => p.id === idProducto);
     
     // Paso 2: Obtener carrito actual de localStorage
-    
+    carrito = JSON.parse(localStorage.getItem('carrito')) || [];
     
     // Paso 3: Verificar si el producto ya está en el carrito
     
-    
+    const productoEnCarrito = carrito.find(p => p.id === idProducto);
+   
     // Paso 4: Agregar o actualizar cantidad
-    
-    
+     if (productoEnCarrito) {
+        productoEnCarrito.cantidad += 1;
+     } else {
+        carrito.push({ ...producto, cantidad: 1 });
+     }
     // Paso 5: Guardar en localStorage
-    
+   localStorage.setItem('carrito', JSON.stringify(carrito)); 
     
     // Paso 6: Actualizar contador
     
-    
+    const totalItems = carrito.reduce((total, item) => total + item.cantidad, 0);
+    contadorCarrito.textContent = totalItems;
     // Mensaje de confirmación (opcional)
-    alert('Producto agregado al carrito!');
+    //alert('Producto agregado al carrito!');
+     mostrarModal();
+    
 }
+
+
 
 // ==========================================
 // FUNCIÓN 4: ACTUALIZAR CONTADOR DEL CARRITO (5 PUNTOS)
@@ -161,13 +249,13 @@ function actualizarContadorCarrito() {
     // TODO: Escribe tu código aquí
     
     // Paso 1: Obtener carrito de localStorage
-    
+    carrito = JSON.parse(localStorage.getItem('carrito')) || [];
     
     // Paso 2: Calcular total con reduce()
-    
+    const Total = carrito.reduce((total, item) => total + item.cantidad, 0);
     
     // Paso 3: Mostrar en el contador
-    
+    contadorCarrito.textContent = Total;
 }
 
 // ==========================================

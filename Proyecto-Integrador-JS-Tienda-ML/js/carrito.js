@@ -49,11 +49,15 @@ function cargarCarrito() {
     try {
         // TODO: Escribe tu código aquí
         // Ejemplo: const datosGuardados = localStorage.getItem('carrito');
+        const datosGuardados = localStorage.getItem('carrito');
+        if (datosGuardados) {
+            carrito = JSON.parse(datosGuardados);
         
-        
-        console.log('Carrito cargado:', carrito);
+        console.log('Carrito cargado:', carrito);}
         
         // TODO: Llamar funciones para actualizar la interfaz
+        mostrarProductosCarrito();
+        actualizarResumenCompra();
         
     } catch (error) {
         console.error('Error al cargar carrito:', error);
@@ -98,7 +102,8 @@ function cargarCarrito() {
  */
 function mostrarProductosCarrito() {
     // TODO: Paso 1: Limpiar contenido anterior
-    
+    listaCarrito.innerHTML = '';
+
     
     // TODO: Paso 2: Verificar si el carrito está vacío
     if (carrito.length === 0) {
@@ -115,7 +120,23 @@ function mostrarProductosCarrito() {
     // TODO: Paso 4: Recorrer productos y crear elementos
     carrito.forEach((producto, indice) => {
         // TODO: Crear elemento para cada producto
-        
+        const item = document.createElement('div');
+        item.classList.add('cart-item');
+       item.innerHTML = `
+  <img src="${producto.imagen}" alt="${producto.nombre}">
+  <div class="item-info">
+    <h3>${producto.nombre}</h3>
+    <p>Precio: $${producto.precio}</p>
+    <div class="quantity-controls">
+      <button onclick="cambiarCantidad(${indice}, -1)">-</button>
+      <span>${producto.cantidad}</span>
+      <button onclick="cambiarCantidad(${indice}, 1)">+</button>
+    </div>
+  </div>
+  <button onclick="eliminarDelCarrito(${indice})">Eliminar</button>
+`;
+
+listaCarrito.appendChild(item);
         
     });
 }
@@ -150,13 +171,23 @@ function cambiarCantidad(indice, cambio) {
     // TODO: Escribe tu código aquí
     
     // Paso 1: Verificar índice válido
-    
+if (indice < 0 || indice >= carrito.length) {
+        console.error('Índice inválido para cambiar cantidad:', indice);
+        return;
+    }
+
     
     // Paso 2: Calcular nueva cantidad
-    
+  let nuevaCantidad = carrito[indice].cantidad + cambio;
     
     // Paso 3: Manejar cantidad <= 0
-    
+    if (nuevaCantidad <= 0) {
+        eliminarDelCarrito(indice);
+        return;
+    } else {
+carrito[indice].cantidad = nuevaCantidad;
+localStorage.setItem('carrito', JSON.stringify(carrito));
+    }
     
     // Paso 4: Actualizar cantidad
     
@@ -165,6 +196,8 @@ function cambiarCantidad(indice, cambio) {
     
     
     // Paso 6: Actualizar interfaz
+    mostrarProductosCarrito();
+    actualizarResumenCompra();
     
 }
 
@@ -189,21 +222,23 @@ function cambiarCantidad(indice, cambio) {
  */
 function actualizarResumenCompra() {
     // TODO: Paso 1: Calcular subtotal con reduce()
-    // const subtotal = carrito.reduce((total, producto) => {
-    //     return total + (producto.precio * producto.cantidad);
-    // }, 0);
+    const subtotal = carrito.reduce((total, producto) => {
+         return total + (producto.precio * producto.cantidad);
+     }, 0);
     
     
     // TODO: Paso 2: Contar total de items con reduce()
-    
+    const totalItems = carrito.reduce((total, producto) => {
+         return total + producto.cantidad;
+     }, 0);
     
     // TODO: Paso 3: Para este examen simplificado, total = subtotal
-    
+    const total = subtotal;
     
     // TODO: Paso 4: Actualizar elementos del DOM
-    // contadorItems.textContent = totalItems;
-    // subtotalElemento.textContent = formatearPrecio(subtotal);
-    // totalElemento.textContent = formatearPrecio(total);
+     contadorItems.textContent = totalItems;
+     subtotalElemento.textContent = formatearPrecio(subtotal);
+     totalElemento.textContent = formatearPrecio(total);
     
 }
 
@@ -230,16 +265,20 @@ function eliminarDelCarrito(indice) {
     // TODO: Escribe tu código aquí
     
     // Paso 1: Verificar índice válido
-    
+    if (indice < 0 || indice >= carrito.length) {
+        console.error('Índice inválido para eliminar del carrito:', indice);
+        return;
+    }
     
     // Paso 2: Eliminar con splice()
-    
+    carrito.splice(indice, 1);
     
     // Paso 3: Guardar en localStorage
-    
+    localStorage.setItem('carrito', JSON.stringify(carrito));
     
     // Paso 4: Actualizar interfaz
-    
+    mostrarProductosCarrito();
+    actualizarResumenCompra();
     
     alert('Producto eliminado del carrito');
 }
@@ -259,15 +298,38 @@ function eliminarDelCarrito(indice) {
  */
 function vaciarCarrito() {
     // TODO: Escribe tu código aquí
-    if (confirm('¿Estás seguro de vaciar todo el carrito?')) {
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: '¡Se eliminarán todos los productos del carrito!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, vaciar carrito',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
         // TODO: Vaciar array y localStorage
-        
+        carrito.length = 0; 
+        localStorage.removeItem('carrito');
         
         // TODO: Actualizar interfaz
+        mostrarProductosCarrito();
+        actualizarResumenCompra();
         
-        
-        alert('Carrito vaciado');
+      
+    Swal.fire({
+      icon: 'success',
+      title: 'Carrito Vaciado',
+      text: 'Todos los productos se eliminaron correctamente.',
+      confirmButtonText: 'Continuar'
+    });
+
+
+
     }
+
+});
 }
 
 // ==========================================
